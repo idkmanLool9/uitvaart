@@ -565,29 +565,66 @@ function dossierSpec(d, kosten) {
   };
 }
 
-// Korte begeleidende mail: de vólledige gegevens zitten in de bijgevoegde PDF,
-// de mail zelf blijft een nette samenvatting (officiële stijl).
+// Volledige dossier-mail: álle gegevens in de mailtekst zelf (net als de PDF),
+// mét de PDF als bijlage bovenaan.
 function buildDossierEmail(d, kosten) {
-  const kostenLijst = Array.isArray(kosten) ? _kostenInPresetVolgorde(kosten) : [];
-  const totaal = kostenLijst.reduce((s, k) => s + (Number(k.bedrag) || 0), 0);
-  const uitv = [fmtDate(d.uitvaart_datum), d.uitvaart_tijd && 'om ' + d.uitvaart_tijd].filter(Boolean).join(' ');
-  const s = (typeof Settings !== 'undefined') ? Settings.all() : {};
-
   const parts = [];
   parts.push(`<p style="margin:0 0 12px;">Beste,</p>`);
-  parts.push(`<p style="margin:0 0 14px;">Hierbij het uitvaartdossier <strong>${esc(d.dossier_nummer || '')}</strong>${d.status ? ' (status: ' + esc((d.status||'').replace('_',' ')) + ')' : ''}. De volledige gegevens vindt u in de bijgevoegde PDF; hieronder een korte samenvatting.</p>`);
+  parts.push(`<p style="margin:0 0 14px;">Hierbij de gegevens van het uitvaartdossier <strong>${esc(d.dossier_nummer || '')}</strong>${d.status ? ' (status: ' + esc((d.status||'').replace('_',' ')) + ')' : ''}.</p>`);
 
-  parts.push(emH3('Samenvatting'));
-  parts.push(emTable(_rijenMetStreep([
-    ['Overledene', fullName(d)],
-    ['Overleden', [fmtDate(d.overlijdensdatum), d.overlijdensplaats && 'te ' + d.overlijdensplaats].filter(Boolean).join(' ')],
-    ['Uitvaart', uitv],
-    ['Kerk', d.kerk_locatie],
-    ['Begraafplaats', d.begraafplaats],
-    ['Contactpersoon', [d.contact_voornaam, d.contact_naam].filter(Boolean).join(' ')],
-    ['Totaal kosten', kostenLijst.length ? fmtEUR(totaal) : ''],
-  ])));
+  dossierGroepen(d).forEach(g => {
+    parts.push(emH3(g.heading));
+    parts.push(emTable(_rijenMetStreep(g.rows)));
+  });
 
+  // ─── Kostenoverzicht ──────────────────────────────────────────────────
+  const kostenLijst = Array.isArray(kosten) ? _kostenInPresetVolgorde(kosten) : [];
+  const totaalKost = kostenLijst.reduce((s, k) => s + (Number(k.bedrag) || 0), 0);
+  const betaaldKost = kostenLijst.filter(k => k.betaald).reduce((s, k) => s + (Number(k.bedrag) || 0), 0);
+  const openKost = Math.max(0, totaalKost - betaaldKost);
+  parts.push(emH3('Kostenoverzicht'));
+  if (kostenLijst.length === 0) {
+    parts.push(`<p style="color:#6f6a62;font-style:italic;margin:6px 0 14px;">Geen kostenposten geregistreerd.</p>`);
+  } else {
+    parts.push(`<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:13px;">
+      <thead>
+        <tr style="background:#f6f4ef;">
+          <th align="left"  style="padding:7px 10px;border-bottom:1px solid #e5e2da;font-weight:600;color:#6f6a62;text-transform:uppercase;font-size:11px;letter-spacing:.04em;">Omschrijving</th>
+          <th align="left"  style="padding:7px 10px;border-bottom:1px solid #e5e2da;font-weight:600;color:#6f6a62;text-transform:uppercase;font-size:11px;letter-spacing:.04em;">Categorie</th>
+          <th align="right" style="padding:7px 10px;border-bottom:1px solid #e5e2da;font-weight:600;color:#6f6a62;text-transform:uppercase;font-size:11px;letter-spacing:.04em;">Aantal</th>
+          <th align="right" style="padding:7px 10px;border-bottom:1px solid #e5e2da;font-weight:600;color:#6f6a62;text-transform:uppercase;font-size:11px;letter-spacing:.04em;">Bedrag</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${kostenLijst.map(k => {
+          const aantal = Number(k.aantal) || 1;
+          const stuk = aantal > 0 ? (Number(k.bedrag) || 0) / aantal : 0;
+          return `<tr>
+            <td style="padding:7px 10px;border-bottom:1px solid #f0eee8;">${esc(k.omschrijving)}${aantal !== 1 ? ` <span style="color:#8a847b;font-size:11px;">(${esc(fmtEUR(stuk))} per stuk)</span>` : ''}</td>
+            <td style="padding:7px 10px;border-bottom:1px solid #f0eee8;color:#6f6a62;">${esc(categorieLabel(k.categorie))}</td>
+            <td align="right" style="padding:7px 10px;border-bottom:1px solid #f0eee8;font-variant-numeric:tabular-nums;">${aantal}</td>
+            <td align="right" style="padding:7px 10px;border-bottom:1px solid #f0eee8;font-variant-numeric:tabular-nums;">${esc(fmtEUR(k.bedrag))}${k.betaald ? ' <span style="color:#2a7a3a;font-size:11px;">✓</span>' : ''}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" align="right" style="padding:8px 10px;font-weight:600;border-top:2px solid #d8d4ca;">Totaal</td>
+          <td align="right" style="padding:8px 10px;font-weight:600;font-variant-numeric:tabular-nums;border-top:2px solid #d8d4ca;">${esc(fmtEUR(totaalKost))}</td>
+        </tr>
+        ${betaaldKost > 0 ? `<tr>
+          <td colspan="3" align="right" style="padding:6px 10px;color:#2a7a3a;">Reeds betaald</td>
+          <td align="right" style="padding:6px 10px;color:#2a7a3a;font-variant-numeric:tabular-nums;">- ${esc(fmtEUR(betaaldKost))}</td>
+        </tr>` : ''}
+        ${openKost > 0 ? `<tr>
+          <td colspan="3" align="right" style="padding:8px 10px;font-weight:700;color:#b34;">Open saldo</td>
+          <td align="right" style="padding:8px 10px;font-weight:700;color:#b34;font-variant-numeric:tabular-nums;">${esc(fmtEUR(openKost))}</td>
+        </tr>` : ''}
+      </tfoot>
+    </table>`);
+  }
+
+  const s = (typeof Settings !== 'undefined') ? Settings.all() : {};
   parts.push(`<p style="margin:18px 0 0;font-size:13px;color:#6f6a62;">Met vriendelijke groet,<br><strong>${esc(s.app_name || 'Uitvaartleider')}</strong>${s.app_tagline ? '<br>' + esc(s.app_tagline) : ''}</p>`);
   parts.push(buildEmailFooter());
   return parts.join('\n');
