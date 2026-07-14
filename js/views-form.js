@@ -1384,7 +1384,13 @@ function renderDossierForm(params) {
         try {
           const kostenLijst = DB.where(KEYS.KOSTEN, k => k.dossier_id === savedDossier.id);
           const subj = `Uitvaartdossier ${savedDossier.dossier_nummer || ''} — ${fullName(savedDossier) || ''}`.trim();
-          const body = buildDossierEmail(savedDossier, kostenLijst);
+          let body = buildDossierEmail(savedDossier, kostenLijst);
+          // Volledige dossier-PDF als bijlage (bovenaan) meesturen
+          try {
+            const pdfBlob = await PdfGen.blobFromSpec(dossierSpec(savedDossier, kostenLijst));
+            const up = await PdfGen.uploadAsAttachment(savedDossier.id, pdfBlob, 'dossier');
+            body = `<p style="margin:0 0 16px;padding:11px 13px;background:#f6f4ef;border:1px solid #e5e2da;border-radius:8px;font-size:14px;">📎 <strong>Bijlage:</strong> <a href="${up.url}" style="color:#2563eb;">Dossier ${savedDossier.dossier_nummer || ''} (PDF)</a></p>` + body;
+          } catch (pdfErr) { console.warn('Auto-mail PDF-bijlage mislukt:', pdfErr); }
           await EmailService.send(klooster, subj, body);
         } catch (mailErr) {
           // Niet blokkerend — gewoon loggen en doorgaan
