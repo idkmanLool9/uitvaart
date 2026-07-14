@@ -154,10 +154,16 @@ workflows:
           npm run cap:assets
       - name: Versie + buildnummer (uniek via tijdstempel)
         script: |
+          # Marketing-versie (CFBundleShortVersionString) automatisch afgeleid van
+          # APP_BUILD in js/app.js → altijd hoger dan de vorige release. Zo weigert
+          # App Store Connect nooit meer met "train 1.0 is closed" / "must contain
+          # a higher version". De widget erft dit via $(MARKETING_VERSION).
+          APP_BUILD=$(grep -m1 -E '^const APP_BUILD' js/app.js | grep -oE '[0-9]+' | head -1)
+          cd ios/App
+          agvtool new-marketing-version "1.0.${APP_BUILD:-1}"
           # Buildnummer = Unix-tijdstempel: altijd uniek én hoger dan het
           # vorige, dus nooit meer "build number already used" bij uploaden.
           # -all pakt ook de widget-extensie mee (apple-generic versioning).
-          cd ios/App
           agvtool new-version -all "$(date +%s)"
       - name: Widget-extensie signing (App ID + profiel ophalen/aanmaken)
         script: |
