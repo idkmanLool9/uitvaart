@@ -465,41 +465,100 @@ function _kostenInPresetVolgorde(kosten) {
 }
 
 // Spec voor de PDF-generator (jsPDF) — volledig dossieroverzicht.
-function dossierSpec(d, kosten) {
+// Alle dossiervelden gegroepeerd — gedeeld door zowel de PDF als de e-mail,
+// zodat beide exact hetzelfde tonen én compleet zijn. Lege waarden worden via
+// _rijenMetStreep een "-", zodat élk veld altijd zichtbaar is.
+function dossierGroepen(d) {
   const adresO = [d.adres_overledene, d.postcode_overledene, d.woonplaats_overledene].filter(Boolean).join(', ');
   const adresC = [[d.contact_adres, d.contact_huisnummer].filter(Boolean).join(' '), d.contact_postcode, d.contact_woonplaats].filter(Boolean).join(', ');
-  const kostenLijst = Array.isArray(kosten) ? _kostenInPresetVolgorde(kosten) : [];
-  const totaal = kostenLijst.reduce((s, k) => s + (Number(k.bedrag) || 0), 0);
+  const geboren = [fmtDate(d.geboortedatum), d.geboorteplaats && 'te ' + d.geboorteplaats].filter(Boolean).join(' ');
+  const overleden = [fmtDate(d.overlijdensdatum), d.overlijdenstijd && 'om ' + d.overlijdenstijd, d.overlijdensplaats && 'te ' + d.overlijdensplaats].filter(Boolean).join(' ');
+  const huis = [fmtDate(d.huisbezoek_datum), d.huisbezoek_tijd && 'om ' + d.huisbezoek_tijd].filter(Boolean).join(' ');
+  const avond = [fmtDate(d.avondwake_datum), d.avondwake_tijd && 'om ' + d.avondwake_tijd, d.avondwake_locatie].filter(Boolean).join(' ');
+  const uitv = [fmtDate(d.uitvaart_datum), d.uitvaart_tijd && 'om ' + d.uitvaart_tijd].filter(Boolean).join(' ');
+  const graf = [d.begraafplaats, d.grafnummer && 'graf ' + d.grafnummer, d.graf_type && '(' + d.graf_type + ')'].filter(Boolean).join(' — ');
+  const geld = (bedrag, extra) => bedrag ? fmtEUR(bedrag) + (extra || '') : '';
 
-  const sections = [
+  return [
     { heading: 'Overledene', rows: [
-      ['Naam', fullName(d)], ['Geslacht', d.geslacht],
-      ['Geboren', [fmtDate(d.geboortedatum), d.geboorteplaats && 'te ' + d.geboorteplaats].filter(Boolean).join(' ')],
-      ['Overleden', [fmtDate(d.overlijdensdatum), d.overlijdenstijd && 'om ' + d.overlijdenstijd, d.overlijdensplaats && 'te ' + d.overlijdensplaats].filter(Boolean).join(' ')],
-      ['Adres', adresO], ['BSN', d.bsn], ['Nationaliteit', d.nationaliteit], ['Gezinsnummer', d.gezinsnummer],
+      ['Naam', fullName(d)],
+      ['Doopnaam', d.doopnaam],
+      ['Geslacht', d.geslacht],
+      ['Geboren', geboren],
+      ['Overleden', overleden],
+      ['Adres', adresO],
+      ['BSN', d.bsn],
+      ['(Ex)partner', d.partner_naam],
+      ['Kinderen', d.kinderen_status],
+      ['Minderjarige kinderen', d.minderjarige_kinderen],
+      ['Namen kinderen', d.kinderen_namen],
+      ['Nationaliteit', d.nationaliteit],
+      ['Lid SOK', d.syrisch_orthodox_lid],
+      ['Gezinsnummer', d.gezinsnummer],
     ] },
     { heading: 'Contactpersoon', rows: [
-      ['Naam', [d.contact_voornaam, d.contact_naam].filter(Boolean).join(' ')], ['Adres', adresC],
-      ['Telefoon', d.contact_telefoon], ['E-mail', d.contact_email], ['Relatie', d.contact_relatie],
+      ['Naam', [d.contact_voornaam, d.contact_naam].filter(Boolean).join(' ')],
+      ['BSN', d.contact_bsn],
+      ['Adres', adresC],
+      ['Geboortedatum', fmtDate(d.contact_geboortedatum)],
+      ['Telefoon', d.contact_telefoon],
+      ['E-mail', d.contact_email],
+      ['Relatie tot overledene', d.contact_relatie],
     ] },
     { heading: 'Kerkelijk & uitvaartdienst', rows: [
-      ['Parochie', d.parochie], ['Priester', d.priester], ['Type uitvaart', d.uitvaart_type],
-      ['Datum & tijd', [fmtDate(d.uitvaart_datum), d.uitvaart_tijd && 'om ' + d.uitvaart_tijd].filter(Boolean).join(' ')],
+      ['Parochie', d.parochie],
+      ['Priester', d.priester],
+      ['Huisbezoek', huis],
+      ['Avondwake', avond],
+      ['Type uitvaart', d.uitvaart_type],
+      ['Datum & tijdstip', uitv],
       ['Kerk', d.kerk_locatie],
-      ['Begraafplaats', [d.begraafplaats, d.grafnummer && 'graf ' + d.grafnummer].filter(Boolean).join(' — ')],
+      ['Begraafplaats', graf],
+      ['Condoleance', d.condoleance_locatie],
+    ] },
+    { heading: 'Verzekering & betaling', rows: [
+      ['Verzekering', d.verzekering_status],
+      ['Maatschappij', d.verzekering_maatschappij],
+      ['Polisnummer', d.polisnummer],
+      ['Polishouder', d.verzekering_polishouder],
+      ['Dekkingsbedrag', d.verzekering_dekking ? fmtEUR(d.verzekering_dekking) : ''],
+      ['Pakket', d.verzekering_pakket],
+      ['Aanmelding-status', d.verzekering_aanmelding_status],
+      ['Verzekering-contact', d.verzekering_contact_naam],
+      ['Telefoon verz.-contact', d.verzekering_contact_telefoon],
+      ['Betaalwijze', d.betaalwijze],
+      ['Aanbetaling', geld(d.aanbetaling_bedrag, d.aanbetaling_datum ? ' op ' + fmtDate(d.aanbetaling_datum) : '')],
+      ['Eindafrekening', geld(d.eindafrekening_bedrag, d.eindafrekening_status ? ' (' + d.eindafrekening_status + ')' : '')],
+      ['Betalingstermijn', d.betalingstermijn],
+      ['Verantwoordelijke', d.verantwoordelijke_persoon],
+    ] },
+    { heading: 'Opdrachtgever', rows: [
+      ['Naam', d.opdrachtgever_naam],
+      ['Telefoon', d.opdrachtgever_telefoon],
+    ] },
+    { heading: 'Bijzonderheden', rows: [
+      ['Toelichting', d.bijzonderheden],
     ] },
   ];
-  if (d.verzekering_status === 'met verzekering') {
-    sections.push({ heading: 'Verzekering', rows: [
-      ['Maatschappij', d.verzekering_maatschappij], ['Polisnummer', d.polisnummer],
-      ['Dekkingsbedrag', d.verzekering_dekking ? fmtEUR(d.verzekering_dekking) : ''], ['Pakket', d.verzekering_pakket],
-    ] });
-  }
-  sections.push({ heading: 'Opdrachtgever', rows: [['Naam', d.opdrachtgever_naam], ['Telefoon', d.opdrachtgever_telefoon]] });
+}
+
+// Vervang lege waarden door "-" zodat élk veld zichtbaar blijft.
+function _rijenMetStreep(rows) {
+  return rows.map(([k, v]) => [k, (v == null || String(v).trim() === '') ? '-' : v]);
+}
+
+function dossierSpec(d, kosten) {
+  const kostenLijst = Array.isArray(kosten) ? _kostenInPresetVolgorde(kosten) : [];
+  const totaal = kostenLijst.reduce((s, k) => s + (Number(k.bedrag) || 0), 0);
+  const sections = dossierGroepen(d).map(g => ({ heading: g.heading, rows: _rijenMetStreep(g.rows) }));
 
   return {
     title: 'DOSSIER',
-    meta: ['Dossier: ' + (d.dossier_nummer || ''), 'Datum: ' + new Date().toLocaleDateString('nl-NL')],
+    meta: [
+      'Dossier: ' + (d.dossier_nummer || '-'),
+      'Status: ' + ((d.status || '-').replace('_', ' ')),
+      'Datum: ' + new Date().toLocaleDateString('nl-NL'),
+    ],
     sections,
     table: kostenLijst.length ? { heading: 'Kostenoverzicht', rows: kostenLijst.map(k => [k.omschrijving || '', k.categorie || '', fmtEUR(k.bedrag)]) } : null,
     totals: kostenLijst.length ? [['Totaal', fmtEUR(totaal), true]] : [],
@@ -507,83 +566,14 @@ function dossierSpec(d, kosten) {
 }
 
 function buildDossierEmail(d, kosten) {
-  const adresO = [d.adres_overledene, d.postcode_overledene, d.woonplaats_overledene].filter(Boolean).join(', ');
-  const adresC = [[d.contact_adres, d.contact_huisnummer].filter(Boolean).join(' '), d.contact_postcode, d.contact_woonplaats].filter(Boolean).join(', ');
-  const huis = [fmtDate(d.huisbezoek_datum), d.huisbezoek_tijd].filter(Boolean).join(' ');
-  const uitv = [fmtDate(d.uitvaart_datum), d.uitvaart_tijd && 'om ' + d.uitvaart_tijd].filter(Boolean).join(' ');
-  const grafstuk = [d.begraafplaats, d.grafnummer && 'graf ' + d.grafnummer, d.graf_type && '(' + d.graf_type + ')'].filter(Boolean).join(' — ');
-
   const parts = [];
   parts.push(`<p style="margin:0 0 12px;">Beste,</p>`);
   parts.push(`<p style="margin:0 0 14px;">Hierbij de gegevens van het uitvaartdossier <strong>${esc(d.dossier_nummer || '')}</strong>${d.status ? ' (status: ' + esc((d.status||'').replace('_',' ')) + ')' : ''}.</p>`);
 
-  parts.push(emH3('Overledene'));
-  parts.push(emTable([
-    ['Naam', fullName(d)],
-    ['Geslacht', d.geslacht],
-    ['Geboren', [fmtDate(d.geboortedatum), d.geboorteplaats && 'te ' + d.geboorteplaats].filter(Boolean).join(' ')],
-    ['Overleden', [fmtDate(d.overlijdensdatum), d.overlijdenstijd && 'om ' + d.overlijdenstijd, d.overlijdensplaats && 'te ' + d.overlijdensplaats].filter(Boolean).join(' ')],
-    ['Adres', adresO],
-    ['BSN', d.bsn],
-    ['(Ex)partner', d.partner_naam],
-    ['Kinderen', d.kinderen_status],
-    ['Minderjarige kinderen', d.minderjarige_kinderen],
-    ...(d.minderjarige_kinderen === 'ja' ? [['Namen kinderen', d.kinderen_namen]] : []),
-    ['Nationaliteit', d.nationaliteit],
-    ['Lid SOK', d.syrisch_orthodox_lid],
-    ['Gezinsnummer', d.gezinsnummer],
-  ]));
-
-  parts.push(emH3('Contactpersoon'));
-  parts.push(emTable([
-    ['BSN', d.contact_bsn],
-    ['Naam', [d.contact_voornaam, d.contact_naam].filter(Boolean).join(' ')],
-    ['Adres', adresC],
-    ['Geboortedatum', fmtDate(d.contact_geboortedatum)],
-    ['Telefoon', d.contact_telefoon],
-    ['E-mail', d.contact_email],
-    ['Relatie tot overledene', d.contact_relatie],
-  ]));
-
-  parts.push(emH3('Kerkelijk & uitvaartdienst'));
-  parts.push(emTable([
-    ['Parochie', d.parochie],
-    ['Priester', d.priester],
-    ['Huisbezoek', huis],
-    ['Type uitvaart', d.uitvaart_type],
-    ['Datum & tijdstip', uitv],
-    ['Kerk', d.kerk_locatie],
-    ['Begraafplaats', grafstuk],
-  ]));
-
-  if (d.verzekering_status === 'met verzekering') {
-    parts.push(emH3('Verzekering'));
-    parts.push(emTable([
-      ['Maatschappij', d.verzekering_maatschappij],
-      ['Polisnummer', d.polisnummer],
-      ['Polishouder', d.verzekering_polishouder],
-      ['Dekkingsbedrag', d.verzekering_dekking ? fmtEUR(d.verzekering_dekking) : ''],
-      ['Pakket', d.verzekering_pakket],
-      ['Aanmelding-status', d.verzekering_aanmelding_status],
-      ['Contactpersoon', d.verzekering_contact_naam],
-      ['Telefoon contact', d.verzekering_contact_telefoon],
-    ]));
-  } else if (d.verzekering_status === 'zonder verzekering') {
-    parts.push(emH3('Betaling (zonder verzekering)'));
-    parts.push(emTable([
-      ['Betaalwijze', d.betaalwijze],
-      ['Aanbetaling', d.aanbetaling_bedrag ? fmtEUR(d.aanbetaling_bedrag) + (d.aanbetaling_datum ? ' op ' + fmtDate(d.aanbetaling_datum) : '') : ''],
-      ['Eindafrekening', d.eindafrekening_bedrag ? fmtEUR(d.eindafrekening_bedrag) + (d.eindafrekening_status ? ' (' + d.eindafrekening_status + ')' : '') : ''],
-      ['Betalingstermijn', d.betalingstermijn],
-      ['Verantwoordelijke', d.verantwoordelijke_persoon],
-    ]));
-  }
-
-  parts.push(emH3('Opdrachtgever'));
-  parts.push(emTable([
-    ['Naam', d.opdrachtgever_naam],
-    ['Telefoon', d.opdrachtgever_telefoon],
-  ]));
+  dossierGroepen(d).forEach(g => {
+    parts.push(emH3(g.heading));
+    parts.push(emTable(_rijenMetStreep(g.rows)));
+  });
 
   // ─── Kostenoverzicht ──────────────────────────────────────────────────
   const kostenLijst = Array.isArray(kosten) ? _kostenInPresetVolgorde(kosten) : [];
@@ -630,11 +620,6 @@ function buildDossierEmail(d, kosten) {
         </tr>` : ''}
       </tfoot>
     </table>`);
-  }
-
-  if (d.bijzonderheden) {
-    parts.push(emH3('Bijzonderheden'));
-    parts.push(`<p style="white-space:pre-wrap;margin:6px 0 14px;font-size:14px;line-height:1.55;">${esc(d.bijzonderheden)}</p>`);
   }
 
   const s = (typeof Settings !== 'undefined') ? Settings.all() : {};
