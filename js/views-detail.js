@@ -40,12 +40,12 @@ function renderDossierDetail(params) {
         </div>
         <div class="page-actions">
           <a href="#/dossiers/${d.id}/factuur" class="btn btn-ghost" title="Kostenraming openen">📄 Kostenraming</a>
-          <button type="button" class="btn btn-ghost" id="btn-email-factuur" title="Stuur factuur per e-mail">📧 E-mail factuur</button>
+          <button type="button" class="btn btn-ghost" id="btn-email-dossier" title="Stuur dossier per e-mail">📧 E-mail dossier</button>
           <a href="#/dossiers/${d.id}/bewerken" class="btn btn-primary">Bewerken</a>
           <details class="page-actions-more">
             <summary class="btn btn-ghost" title="Meer acties">⋯</summary>
             <div class="page-actions-menu">
-              <button type="button" class="btn btn-ghost btn-block" id="btn-email-dossier">📧 E-mail dossier</button>
+              <button type="button" class="btn btn-ghost btn-block" id="btn-email-factuur">📧 E-mail factuur</button>
               <button type="button" class="btn btn-ghost btn-block" id="btn-print">📄 Opslaan / delen als PDF</button>
               <button type="button" class="btn btn-ghost btn-block" id="btn-copy-nr">⧉ Kopieer dossiernummer</button>
               <button type="button" class="btn btn-danger btn-block" id="btn-delete">🗑 Verwijderen</button>

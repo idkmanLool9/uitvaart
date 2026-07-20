@@ -89,7 +89,7 @@ body.ui-square .badge, body.ui-square .status, body.ui-square .offline-badge { b
 .brand-text strong { display: block; font-size: 1rem; white-space: nowrap; }
 .brand-text small { color: var(--muted); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.topnav { display: flex; gap: .25rem; flex: 1; }
+.topnav { display: flex; gap: .25rem; flex: 1; justify-content: center; }
 .topnav a { color: var(--text); padding: .5rem .85rem; border-radius: var(--radius); font-size: .92rem; }
 .topnav a:hover { background: var(--bg); text-decoration: none; }
 .topnav a.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
