@@ -296,9 +296,9 @@ function renderDossierDetail(params) {
           </div>`;
         })()}
         <h3 style="margin-top:1rem;">Snel toevoegen uit catalogus</h3>
-        <p class="muted small">Klik om een vast tarief direct toe te voegen.${(() => {
+        <p class="muted small">Klik om een vast tarief direct toe te voegen. Gebruik ✏️ om een prijs aan te passen.${(() => {
           const adminMode = !!Settings.get('catalog_admin_mode');
-          return adminMode ? ' <em>Beheermodus aan — gebruik ✏️ om de prijs aan te passen, 🗑 om te verbergen.</em>' : '';
+          return adminMode ? ' <em>Beheermodus aan — 🗑 verbergt een post uit de lijst.</em>' : '';
         })()}</p>
         <div class="preset-grid">
           ${(() => {
@@ -310,12 +310,16 @@ function renderDossierDetail(params) {
               const trailing = (p.bedrag != null && p.bedrag !== '')
                 ? `<strong>${p.vraagPrijs ? '± ' : ''}${fmtEUR(p.bedrag)}${p._customBedrag && !p.vraagPrijs ? ' ✏️' : ''}</strong>`
                 : (p.nav ? '<strong class="muted">→</strong>' : '');
-              const adminCtrls = (adminMode && !p.nav)
+              // Prijs aanpassen (✏️) mag ALTIJD — geen beheermodus nodig.
+              // Verbergen/herstellen (🗑/↺) blijft achter beheermodus.
+              const adminCtrls = !p.nav
                 ? `<span class="preset-admin">
                     <button type="button" class="preset-edit" data-action="edit-preset" data-preset="${i}" title="Prijs aanpassen">✏️</button>
-                    ${p._hidden
-                      ? `<button type="button" class="preset-show" data-action="show-preset" data-preset="${i}" title="Herstel kostenpost">↺</button>`
-                      : `<button type="button" class="preset-hide" data-action="hide-preset" data-preset="${i}" title="Verwijder uit lijst">🗑</button>`}
+                    ${adminMode
+                      ? (p._hidden
+                          ? `<button type="button" class="preset-show" data-action="show-preset" data-preset="${i}" title="Herstel kostenpost">↺</button>`
+                          : `<button type="button" class="preset-hide" data-action="hide-preset" data-preset="${i}" title="Verwijder uit lijst">🗑</button>`)
+                      : ''}
                   </span>`
                 : '';
               return `<span class="preset-wrap">

@@ -614,7 +614,7 @@ function renderDossierForm(params) {
 
       <section class="wizard-kosten-presets" id="wk-presets-details" style="margin-top:.85rem;">
         <h4 class="wizard-kosten-presets-title">Snel toevoegen uit standaardlijst</h4>
-        ${adminMode ? '<p class="muted small" style="margin:.25rem 0 0;">Beheermodus aan — klik op het potlood om een prijs aan te passen of op de prullenbak om een post uit de lijst te verbergen.</p>' : ''}
+        <p class="muted small" style="margin:.25rem 0 0;">Klik op ✏️ om een prijs aan te passen.${adminMode ? ' Beheermodus aan — 🗑 verbergt een post uit de lijst.' : ''}</p>
         <div class="wizard-preset-grid">
           ${effectieveKostenPresets({ includeHidden: adminMode }).map((p, i) => {
             const cls = 'btn btn-sm btn-ghost wizard-preset-btn'
@@ -626,12 +626,16 @@ function renderDossierForm(params) {
             const prijs = (p.bedrag != null && p.bedrag !== '')
               ? `<span class="muted small">${prijsTekst}</span>`
               : (p.nav ? '<span class="muted small">→</span>' : '');
-            const adminCtrls = (adminMode && !p.nav)
+            // Prijs aanpassen (✏️) mag ALTIJD — geen beheermodus nodig.
+            // Verbergen/herstellen (🗑/↺) blijft achter beheermodus.
+            const adminCtrls = !p.nav
               ? `<span class="wizard-preset-admin">
                   <button type="button" class="wizard-preset-edit" data-wk-edit="${i}" title="Prijs aanpassen">✏️</button>
-                  ${p._hidden
-                    ? `<button type="button" class="wizard-preset-show" data-wk-show="${i}" title="Herstel kostenpost">↺</button>`
-                    : `<button type="button" class="wizard-preset-hide" data-wk-hide="${i}" title="Verwijder uit lijst">🗑</button>`}
+                  ${adminMode
+                    ? (p._hidden
+                        ? `<button type="button" class="wizard-preset-show" data-wk-show="${i}" title="Herstel kostenpost">↺</button>`
+                        : `<button type="button" class="wizard-preset-hide" data-wk-hide="${i}" title="Verwijder uit lijst">🗑</button>`)
+                    : ''}
                 </span>`
               : '';
             return `<span class="wizard-preset-wrap">
