@@ -622,7 +622,7 @@ function renderDossierForm(params) {
               + (p._hidden ? ' is-hidden-preset' : '');
             const prijsTekst = p.vraagPrijs
               ? `± ${fmtEUR(p.bedrag || 0)}`
-              : `${fmtEUR(p.bedrag)}${p._customBedrag ? ' ✏️' : ''}`;
+              : `${fmtEUR(p.bedrag)}`;
             const prijs = (p.bedrag != null && p.bedrag !== '')
               ? `<span class="muted small">${prijsTekst}</span>`
               : (p.nav ? '<span class="muted small">→</span>' : '');

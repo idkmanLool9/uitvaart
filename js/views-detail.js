@@ -308,7 +308,7 @@ function renderDossierDetail(params) {
                 + (p.nav ? ' preset-nav preset-nav-' + p.nav : '')
                 + (p._hidden ? ' is-hidden-preset' : '');
               const trailing = (p.bedrag != null && p.bedrag !== '')
-                ? `<strong>${p.vraagPrijs ? '± ' : ''}${fmtEUR(p.bedrag)}${p._customBedrag && !p.vraagPrijs ? ' ✏️' : ''}</strong>`
+                ? `<strong>${p.vraagPrijs ? '± ' : ''}${fmtEUR(p.bedrag)}</strong>`
                 : (p.nav ? '<strong class="muted">→</strong>' : '');
               // Prijs aanpassen (✏️) mag ALTIJD — geen beheermodus nodig.
               // Verbergen/herstellen (🗑/↺) blijft achter beheermodus.
