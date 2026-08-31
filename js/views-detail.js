@@ -477,16 +477,17 @@ function dossierGroepen(d) {
   const adresC = [[d.contact_adres, d.contact_huisnummer].filter(Boolean).join(' '), d.contact_postcode, d.contact_woonplaats].filter(Boolean).join(', ');
   const geboren = [fmtDate(d.geboortedatum), d.geboorteplaats && 'te ' + d.geboorteplaats].filter(Boolean).join(' ');
   const overleden = [fmtDate(d.overlijdensdatum), d.overlijdenstijd && 'om ' + d.overlijdenstijd, d.overlijdensplaats && 'te ' + d.overlijdensplaats].filter(Boolean).join(' ');
-  const huis = [fmtDate(d.huisbezoek_datum), d.huisbezoek_tijd && 'om ' + d.huisbezoek_tijd].filter(Boolean).join(' ');
-  const avond = [fmtDate(d.avondwake_datum), d.avondwake_tijd && 'om ' + d.avondwake_tijd, d.avondwake_locatie].filter(Boolean).join(' ');
   const uitv = [fmtDate(d.uitvaart_datum), d.uitvaart_tijd && 'om ' + d.uitvaart_tijd].filter(Boolean).join(' ');
   const graf = [d.begraafplaats, d.grafnummer && 'graf ' + d.grafnummer, d.graf_type && '(' + d.graf_type + ')'].filter(Boolean).join(' — ');
-  const geld = (bedrag, extra) => bedrag ? fmtEUR(bedrag) + (extra || '') : '';
 
+  // Alleen velden die in de intake in te vullen zijn. Velden die alleen in de
+  // demo/schema staan maar geen invoer hebben (huisbezoek, avondwake, condoleance,
+  // polishouder, dekkingsbedrag, pakket, aanmelding-status, verz.-contact,
+  // betaalwijze, aanbetaling, eindafrekening, betalingstermijn, verantwoordelijke)
+  // worden hier NIET getoond — anders staat de mail vol met lege regels.
   return [
     { heading: 'Overledene', rows: [
       ['Naam', fullName(d)],
-      ['Doopnaam', d.doopnaam],
       ['Geslacht', d.geslacht],
       ['Geboren', geboren],
       ['Overleden', overleden],
@@ -512,33 +513,20 @@ function dossierGroepen(d) {
     { heading: 'Kerkelijk & uitvaartdienst', rows: [
       ['Parochie', d.parochie],
       ['Priester', d.priester],
-      ['Huisbezoek', huis],
-      ['Avondwake', avond],
       ['Type uitvaart', d.uitvaart_type],
       ['Datum & tijdstip', uitv],
       ['Kerk', d.kerk_locatie],
       ['Begraafplaats', graf],
-      ['Condoleance', d.condoleance_locatie],
     ] },
-    { heading: 'Verzekering & betaling', rows: [
+    { heading: 'Verzekering', rows: [
       ['Verzekering', d.verzekering_status],
       ['Maatschappij', d.verzekering_maatschappij],
       ['Polisnummer', d.polisnummer],
-      ['Polishouder', d.verzekering_polishouder],
-      ['Dekkingsbedrag', d.verzekering_dekking ? fmtEUR(d.verzekering_dekking) : ''],
-      ['Pakket', d.verzekering_pakket],
-      ['Aanmelding-status', d.verzekering_aanmelding_status],
-      ['Verzekering-contact', d.verzekering_contact_naam],
-      ['Telefoon verz.-contact', d.verzekering_contact_telefoon],
-      ['Betaalwijze', d.betaalwijze],
-      ['Aanbetaling', geld(d.aanbetaling_bedrag, d.aanbetaling_datum ? ' op ' + fmtDate(d.aanbetaling_datum) : '')],
-      ['Eindafrekening', geld(d.eindafrekening_bedrag, d.eindafrekening_status ? ' (' + d.eindafrekening_status + ')' : '')],
-      ['Betalingstermijn', d.betalingstermijn],
-      ['Verantwoordelijke', d.verantwoordelijke_persoon],
     ] },
     { heading: 'Opdrachtgever', rows: [
-      ['Naam', d.opdrachtgever_naam],
-      ['Telefoon', d.opdrachtgever_telefoon],
+      // Standaard-opdrachtgever als er niets is ingevuld: Robert Aktan.
+      ['Naam', d.opdrachtgever_naam || 'Robert Aktan'],
+      ['Telefoon', d.opdrachtgever_telefoon || '+31 6 39326795'],
     ] },
     { heading: 'Bijzonderheden', rows: [
       ['Toelichting', d.bijzonderheden],
