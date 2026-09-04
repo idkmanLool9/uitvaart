@@ -1244,6 +1244,16 @@ function renderDossierForm(params) {
     }
   } catch (_) {}
 
+  // Zet meteen een snapshot in localStorage zodat de kist-/bloemen-/eten-
+  // catalogus het dossier direct als "actief" ziet — óók als de gebruiker
+  // nog niks heeft getypt en meteen naar /kisten navigeert. Zonder dit
+  // ontstond de bug "Open eerst een dossier" bij bewerken.
+  try {
+    if (!localStorage.getItem(draftKey)) {
+      localStorage.setItem(draftKey, JSON.stringify(snapshotDossierForm(formEl)));
+    }
+  } catch (_) {}
+
   let saveTimer = null;
   function scheduleSave() {
     if (status) { status.textContent = 'Bezig met bewaren...'; status.className = 'autosave-status saving'; }
