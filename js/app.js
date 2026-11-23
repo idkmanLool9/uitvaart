@@ -12,9 +12,9 @@
 //                    5.5.0 → 5.5.1: knop uit topnav weggehaald
 //                    5.5.1 → 5.6.0: nieuwe agenda-functie toegevoegd
 //                    5.6.x → 6.0.0: totaal nieuwe layout
-const APP_BUILD      = 166;
-const APP_VERSION    = '5.48.6';
-const APP_BUILD_DATE = '2026-09-04';
+const APP_BUILD      = 167;
+const APP_VERSION    = '5.49.0';
+const APP_BUILD_DATE = '2026-11-23';
 
 // ─── Instellingen (cloud-first, localStorage als offline-spiegel) ──────────
 const Settings = {
@@ -1036,6 +1036,9 @@ Router.add('/familie/:token', p => FamiliePortaalView.render(p.token));
     clearBtn.addEventListener('click', () => {
       document.getElementById('login-username').value = '';
       document.getElementById('login-password').value = '';
+      // Ook de onthouden "laatst gebruikte e-mail" wissen, anders is-ie bij
+      // een volgend bezoek aan het inlogscherm weer terug.
+      try { localStorage.removeItem('sok_last_email'); } catch (_) {}
       const errEl = document.getElementById('login-error');
       if (errEl) errEl.hidden = true;
       document.getElementById('login-username').focus();
@@ -1079,7 +1082,24 @@ Router.add('/familie/:token', p => FamiliePortaalView.render(p.token));
       errEl.hidden = false;
       return;
     }
-    document.getElementById('login-password').value = '';
+    // ──────────────────────────────────────────────────────────────────────
+    // Wachtwoord opslaan in de browser-/iOS-sleutelhanger.
+    // 1) Credential Management API (Chrome/Edge): expliciet vragen om op te
+    //    slaan. Safari/iOS negeert dit, maar reageert op het detecteren van
+    //    een succesvolle submit (daarom verderop NIET het veld leegmaken).
+    // 2) Onthoud laatst-gebruikte e-mail in localStorage zodat die automatisch
+    //    weer voorin staat bij een volgend bezoek.
+    try {
+      if ('credentials' in navigator && window.PasswordCredential) {
+        const cred = new window.PasswordCredential({ id: email, password: pw, name: email });
+        navigator.credentials.store(cred).catch(() => {});
+      }
+    } catch (_) {}
+    try { localStorage.setItem('sok_last_email', email); } catch (_) {}
+    // Bewust NIET het wachtwoordveld wissen: Safari/iOS keychain registreert
+    // "succesvolle login" pas ná de submit, en als het veld leeg is denkt-ie
+    // dat het geen echte login was. Het hele login-scherm gaat zometeen weg,
+    // dus laten staan tot showApp() komt.
     try { await Cloud.loadAll(); } catch (e2) { Modal.show({ type: 'error', title: 'Laden mislukt', message: e2.message || String(e2) }); }
     try { await Settings.loadFromCloud(); Branding.apply(); } catch (_) {}
     updateOfflineUI();

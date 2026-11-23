@@ -1262,6 +1262,32 @@ function showLogin() {
   $('#login-screen').hidden = false;
   $('#profile-screen').hidden = true;
   $('#app').hidden = true;
+  // E-mail voor-invullen uit localStorage (laatst gebruikte login). Zo hoef
+  // je op je eigen iPad alleen je wachtwoord in te tikken (of de keychain af
+  // te wachten).
+  try {
+    const u = $('#login-username');
+    if (u && !u.value) {
+      const last = localStorage.getItem('sok_last_email');
+      if (last) u.value = last;
+    }
+  } catch (_) {}
+  // Vraag de browser stilletjes of 'ie opgeslagen gegevens heeft (Chrome/Edge).
+  // `mediation: 'silent'` toont GEEN popup — alleen als de browser zeker weet
+  // welke login het is (bv. maar één opgeslagen credential), vult 'ie meteen.
+  try {
+    if ('credentials' in navigator && window.PasswordCredential) {
+      navigator.credentials.get({ password: true, mediation: 'silent' })
+        .then(cred => {
+          if (!cred) return;
+          const u = $('#login-username');
+          const p = $('#login-password');
+          if (u && !u.value && cred.id) u.value = cred.id;
+          if (p && !p.value && cred.password) p.value = cred.password;
+        })
+        .catch(() => {});
+    }
+  } catch (_) {}
 }
 function showProfilePicker() {
   $('#login-screen').hidden = true;

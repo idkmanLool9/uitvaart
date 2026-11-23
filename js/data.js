@@ -61,7 +61,7 @@ const KOSTEN_PRESETS = [
   { nav: 'bloemen',  categorie: 'bloemen',       omschrijving: '💐 Bloemen — kies in catalogus', bedrag: null   },
   { nav: 'eten',     categorie: 'overig',        omschrijving: '🍽 Eten & drinken — kies in catalogus', bedrag: null },
   // Items met food: true vragen om een aantal bij toevoegen (totaal = aantal × prijs)
-  { food: true, categorie: 'overig', omschrijving: 'Simit',                                       bedrag:   0.80 },
+  { food: true, categorie: 'overig', omschrijving: 'Simit',                                       bedrag:   0.95 },
   { categorie: 'overig',        omschrijving: 'Papier op tafels',                                 bedrag:  60.00 },
   // vraagPrijs: bij toevoegen vraagt de app om het werkelijke bedrag
   // (richtprijs — varieert per dossier). Geen aantal-prompt.
